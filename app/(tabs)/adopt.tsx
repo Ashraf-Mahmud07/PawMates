@@ -1,5 +1,6 @@
+import { useReload } from '@/components/reload-context';
 import { Image } from 'expo-image';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     FlatList,
     Modal,
@@ -21,6 +22,8 @@ export default function AdoptScreen() {
   const tint = Colors[colorScheme ?? 'light'].tint;
 
   const [query, setQuery] = useState('');
+  // transient input value for immediate UI response; `query` will be updated after debounce
+  const [searchText, setSearchText] = useState('');
   const [type, setType] = useState<'All Pets' | 'Cats' | 'Dogs'>('All Pets');
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -101,6 +104,12 @@ export default function AdoptScreen() {
     []
   );
 
+  // debounce: update `query` 800ms after user stops typing
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(searchText), 800);
+    return () => clearTimeout(t);
+  }, [searchText]);
+
   const filtered = useMemo(() => {
     return PETS.filter((p) => {
       if (type !== 'All Pets' && p.type !== type) return false;
@@ -125,8 +134,11 @@ export default function AdoptScreen() {
           <TextInput
             placeholder="Search by name or breed..."
             placeholderTextColor="#999"
-            value={query}
-            onChangeText={setQuery}
+            value={searchText}
+            onChangeText={setSearchText}
+            blurOnSubmit={false}
+            returnKeyType="search"
+            onSubmitEditing={() => setQuery(searchText)}
             style={styles.searchInput}
           />
         </View>
@@ -219,6 +231,11 @@ export default function AdoptScreen() {
         keyExtractor={(i) => i.id}
         contentContainerStyle={styles.list}
         ListHeaderComponent={ListHeader}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
+        removeClippedSubviews={false}
+        refreshing={useReload().refreshing}
+        onRefresh={useReload().triggerRefresh}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View>

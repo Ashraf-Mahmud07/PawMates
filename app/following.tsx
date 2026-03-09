@@ -1,3 +1,4 @@
+import { useReload } from '@/components/reload-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -135,6 +136,8 @@ export default function FollowingScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(i) => i.id}
+        refreshing={useReload().refreshing}
+        onRefresh={useReload().triggerRefresh}
         renderItem={({ item }) => (
           <View style={styles.listItem}>
             <View style={styles.avatarsRow}>

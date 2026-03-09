@@ -1,3 +1,4 @@
+import { useReload } from '@/components/reload-context';
 import { useSideDrawer } from '@/components/side-drawer-context';
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
@@ -6,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -194,7 +196,11 @@ export default function HomeScreen() {
       </View>
 
       {/* Feed generated from POSTS */}
-      <ScrollView contentContainerStyle={styles.feed} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.feed}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={useReload().refreshing} onRefresh={useReload().triggerRefresh} />}
+      >
         {POSTS.map((p) => (
           <ThemedView key={p.id} style={styles.card}>
             <View style={styles.cardHeader}>

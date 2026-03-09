@@ -1,10 +1,11 @@
+import { useReload } from '@/components/reload-context';
 import { useSideDrawer } from '@/components/side-drawer-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Stack } from 'expo-router';
 import React from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const MEET_PROFILES = [
   {
@@ -57,7 +58,11 @@ export default function MeetScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={useReload().refreshing} onRefresh={useReload().triggerRefresh} />}
+      >
         {MEET_PROFILES.map((p) => (
           <View key={p.id} style={styles.card}>
             <View style={styles.cardHeaderRow}>
