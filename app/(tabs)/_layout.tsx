@@ -58,6 +58,15 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="adopt"
+        options={{
+          title: 'Adopt',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="heart.fill" focused={!!focused} color={focused ? colors.tint : colors.icon} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="meet"
         options={{
           title: 'Meet',

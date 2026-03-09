@@ -330,6 +330,7 @@ export default function HomeScreen() {
             </KeyboardAvoidingView>
           </View>
         </Modal>
+        <View style={{ height: 60 }} />
     </ThemedView>
   );
 }
