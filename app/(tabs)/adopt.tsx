@@ -1,5 +1,6 @@
 import { useReload } from '@/components/reload-context';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     FlatList,
@@ -22,6 +23,7 @@ import { styles } from './adopt.styles';
 export default function AdoptScreen() {
     const colorScheme = useColorScheme();
     const tint = Colors[colorScheme ?? 'light'].tint;
+    const router = useRouter();
 
     const [query, setQuery] = useState('');
     // transient input value for immediate UI response; `query` will be updated after debounce
@@ -188,7 +190,7 @@ export default function AdoptScreen() {
                 refreshing={useReload().refreshing}
                 onRefresh={useReload().triggerRefresh}
                 renderItem={({ item }) => (
-                    <View style={styles.card}>
+                    <TouchableOpacity style={styles.card} onPress={() => router.push(`/pet/${item.id}` as any)}>
                         <View>
                             <Image source={{ uri: item.image }} style={styles.cardImage} />
                             <View style={styles.tagPill}>
@@ -210,7 +212,7 @@ export default function AdoptScreen() {
                                 <ThemedText style={styles.locationText}>{item.location}</ThemedText>
                             </View>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 )}
             />
             {/* Dropdown modal for filter selectors */}
