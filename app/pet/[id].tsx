@@ -21,6 +21,7 @@ export default function PetDetails() {
     const { refreshing, triggerRefresh } = useReload();
     const [submitting, setSubmitting] = useState(false);
     const scrollRef = useRef<ScrollView | null>(null);
+    const [adoptY, setAdoptY] = useState<number>(0);
 
     const [fav, setFav] = useState(false);
     const [imageIndex, setImageIndex] = useState(0);
@@ -177,7 +178,7 @@ export default function PetDetails() {
                     </ThemedText>
                 </View>
 
-                <View style={[styles.section, styles.sectionCard]}>
+                <View style={[styles.section, styles.sectionCard]} onLayout={(e) => setAdoptY(e.nativeEvent.layout.y)}>
                     <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Adopt This Pet</ThemedText>
                     <ThemedText style={{ color: '#666', marginBottom: 8 }}>Quick apply — we&apos;ll review your application and get back to you within 48 hours.</ThemedText>
 
@@ -225,9 +226,9 @@ export default function PetDetails() {
                         if (name && email) {
                             submitApp();
                         } else {
-                            // scroll to form to fill details
+                            // scroll to the Adopt This Pet section
                             if (scrollRef.current) {
-                                scrollRef.current.scrollToEnd({ animated: true });
+                                scrollRef.current.scrollTo({ y: adoptY - 36, animated: true });
                             }
                         }
                     }}
