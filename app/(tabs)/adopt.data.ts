@@ -56,6 +56,11 @@ export const PETS = [
     location: "Dhanmondi, Dhaka",
     image:
       "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?q=80&w=1200",
+    images: [
+      "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?q=80&w=1200",
+      "https://images.unsplash.com/photo-150 cat1?auto=format&q=80&w=1200",
+      "https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?q=80&w=1200",
+    ],
     tag: "Adopt Me",
     type: "Cats",
   },
@@ -68,6 +73,10 @@ export const PETS = [
     location: "Banani, Dhaka",
     image:
       "https://images.unsplash.com/photo-1507149833265-60c372daea22?q=80&w=1200",
+    images: [
+      "https://images.unsplash.com/photo-1507149833265-60c372daea22?q=80&w=1200",
+      "https://images.unsplash.com/photo-1558788353-f76d92427f16?q=80&w=1200",
+    ],
     tag: "Adopt Me",
     type: "Dogs",
   },
@@ -116,6 +125,11 @@ export const PETS = [
     location: "Bashundhara, Dhaka",
     image:
       "https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?q=80&w=1200",
+    images: [
+      "https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?q=80&w=1200",
+      "https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=1200",
+      "https://images.unsplash.com/photo-1543852786-1cf6624b9987?q=80&w=1200",
+    ],
     tag: "Adopt Me",
     type: "Dogs",
   },
@@ -140,6 +154,10 @@ export const PETS = [
     location: "Farmgate, Dhaka",
     image:
       "https://images.unsplash.com/photo-1558788353-f76d92427f16?q=80&w=1200",
+    images: [
+      "https://images.unsplash.com/photo-1558788353-f76d92427f16?q=80&w=1200",
+      "https://images.unsplash.com/photo-1507149833265-60c372daea22?q=80&w=1200",
+    ],
     tag: "Adopt Me",
     type: "Dogs",
   },

@@ -1,9 +1,10 @@
 import { useReload } from '@/components/reload-context';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Dimensions,
     FlatList,
     Modal,
     SafeAreaView,
@@ -13,6 +14,7 @@ import {
     View,
 } from 'react-native';
 
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -20,6 +22,52 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { BREEDS, CITIES, PETS, SIZES } from './adopt.data';
 import { styles } from './adopt.styles';
+
+// Small image slider component used in the adopt cards.
+function ImageSlider({ images }: { images: string[] }) {
+    const width = Dimensions.get('window').width - 32; // account for list padding
+    const ref = useRef<FlatList<string> | null>(null);
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        if (!images || images.length <= 1) return;
+        const id = setInterval(() => {
+            const next = (index + 1) % images.length;
+            setIndex(next);
+            if (ref.current) ref.current.scrollToOffset({ offset: next * width, animated: true });
+        }, 3000);
+        return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [index, images]);
+
+    if (!images || images.length === 0) return null;
+    if (images.length === 1) return <Image source={{ uri: images[0] }} style={styles.cardImage} />;
+
+    return (
+        <>
+            <FlatList
+                ref={ref}
+                data={images}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(_, i) => String(i)}
+                renderItem={({ item }) => <Image source={{ uri: item }} style={[styles.cardImage, { width }]} />}
+                onMomentumScrollEnd={(e) => {
+                    const x = e.nativeEvent.contentOffset.x || 0;
+                    const idx = Math.round(x / width);
+                    setIndex(idx);
+                }}
+            />
+
+            <View style={styles.cardPagerDots} pointerEvents="none">
+                {images.map((_, i) => (
+                    <View key={i} style={[styles.cardDot, index === i && styles.cardDotActive]} />
+                ))}
+            </View>
+        </>
+    );
+}
 
 export default function AdoptScreen() {
     const colorScheme = useColorScheme();
@@ -67,7 +115,29 @@ export default function AdoptScreen() {
 
     const filtered = useMemo(() => {
         return PETS.filter((p) => {
+            // type filter (Cats / Dogs / All Pets)
             if (type !== 'All Pets' && p.type !== type) return false;
+
+            // city filter (skip if default 'All Cities')
+            if (city && city !== CITIES[0]) {
+                if (!p.location.toLowerCase().includes(city.toLowerCase())) return false;
+            }
+
+            // breed filter
+            if (breedFilter && breedFilter !== BREEDS[0]) {
+                if (p.breed.toLowerCase() !== breedFilter.toLowerCase()) return false;
+            }
+
+            // gender filter
+            if (genderFilter && genderFilter !== 'Any') {
+                if (p.gender.toLowerCase() !== genderFilter.toLowerCase()) return false;
+            }
+
+            // size filter: our local data doesn't include size; skip unless expanded
+
+            // attribute filters (childFriendly, vaccinated, etc.) are not present on dummy data
+
+            // text query
             if (!query) return true;
             const q = query.toLowerCase();
             return (
@@ -76,7 +146,7 @@ export default function AdoptScreen() {
                 p.location.toLowerCase().includes(q)
             );
         });
-    }, [query, type]);
+    }, [query, type, city, breedFilter, genderFilter]);
 
     // Pagination (page-wise). Simulate page loads locally by slicing the filtered array.
     const PAGE_SIZE = 8;
@@ -166,7 +236,8 @@ export default function AdoptScreen() {
                 renderItem={({ item }) => (
                     <TouchableOpacity style={styles.card} onPress={() => router.push(`/pet/${item.id}` as any)}>
                         <View>
-                            <Image source={{ uri: item.image }} style={styles.cardImage} />
+                            {/* Image slider: supports item.images (string[]) or fallback to item.image */}
+                            <ImageSlider images={((item as any).images && Array.isArray((item as any).images) ? (item as any).images : [item.image])} />
                             <View style={styles.tagPill}>
                                 <ThemedText style={styles.tagText}>{item.tag}</ThemedText>
                             </View>

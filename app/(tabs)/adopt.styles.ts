@@ -82,6 +82,27 @@ export const styles = StyleSheet.create({
   breed: { color: "#777", marginTop: 6 },
   locationRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
   locationText: { color: "#999", marginLeft: 6 },
+  cardPagerDots: {
+    position: "absolute",
+    bottom: 8,
+    left: 12,
+    right: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+  },
+  cardDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.5)",
+  },
+  cardDotActive: {
+    backgroundColor: "#fff",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   filterBar: {
     marginTop: 12,
     borderWidth: 2,
