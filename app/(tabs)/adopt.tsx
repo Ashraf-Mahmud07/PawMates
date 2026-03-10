@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+    ActivityIndicator,
     FlatList,
     Modal,
     SafeAreaView,
@@ -24,6 +25,7 @@ export default function AdoptScreen() {
     const colorScheme = useColorScheme();
     const tint = Colors[colorScheme ?? 'light'].tint;
     const router = useRouter();
+    const reload = useReload();
 
     const [query, setQuery] = useState('');
     // transient input value for immediate UI response; `query` will be updated after debounce
@@ -76,119 +78,91 @@ export default function AdoptScreen() {
         });
     }, [query, type]);
 
+    // Pagination (page-wise). Simulate page loads locally by slicing the filtered array.
+    const PAGE_SIZE = 8;
+    const [page, setPage] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const displayed = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+
+    const loadMore = () => {
+        if (loadingMore) return;
+        if (page >= totalPages) return;
+        setLoadingMore(true);
+        // simulate small async load; replace with real fetch if needed
+        setTimeout(() => {
+            setPage((p) => p + 1);
+            setLoadingMore(false);
+        }, 350);
+    };
+
     const ListHeader = () => (
         <View style={styles.headerBlock}>
             <ThemedText type="defaultSemiBold" style={styles.title}>Adopt a Pet</ThemedText>
-            <ThemedText style={styles.subtitle}>Give a loving home to a furry friend. Every pet here is looking for their forever family.</ThemedText>
+            <ThemedText style={styles.subtitle}>Find your new companion — simplified view for mobile.</ThemedText>
 
-            <View style={styles.controlsRow}>
+            <View style={[styles.controlsRow, { marginTop: 8 }]}>
                 <View style={styles.searchWrap}>
                     <IconSymbol name="magnifyingglass" size={16} color={Colors.light.icon} />
                     <TextInput
                         placeholder="Search by name or breed..."
                         placeholderTextColor="#999"
                         value={searchText}
-                        onChangeText={setSearchText}
+                        onChangeText={(t) => { setSearchText(t); setPage(1); }}
                         blurOnSubmit={false}
                         returnKeyType="search"
-                        onSubmitEditing={() => setQuery(searchText)}
+                        onSubmitEditing={() => { setQuery(searchText); setPage(1); }}
                         style={styles.searchInput}
                     />
                 </View>
 
                 <TouchableOpacity
-                    style={styles.selector}
-                    onPress={() => setType((t) => (t === 'All Pets' ? 'Cats' : t === 'Cats' ? 'Dogs' : 'All Pets'))}
+                    style={[styles.primaryButton, { backgroundColor: tint }]}
+                    onPress={() => setFilterOpen(true)}
                 >
-                    <ThemedText>{type}</ThemedText>
-                    <IconSymbol name="chevron.down" size={16} color={Colors.light.icon} />
+                    <IconSymbol name="slider.horizontal.3" size={18} color="#fff" />
+                    <ThemedText style={styles.primaryButtonText}>Filters</ThemedText>
                 </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-                style={[styles.filterBar, { borderColor: tint }]}
-                onPress={() => setFilterOpen((v) => !v)}
-            >
-                <IconSymbol name="slider.horizontal.3" size={18} color={tint} />
-                <ThemedText style={{ color: tint, marginLeft: 8, fontWeight: '600' }}>Filter</ThemedText>
-                <IconSymbol name={filterOpen ? 'chevron.up' : 'chevron.down'} size={16} color={tint} />
-            </TouchableOpacity>
-
-            {filterOpen && (
-                <View style={styles.filterPanel}>
-                    <View style={styles.filterRow}>
-                        <TouchableOpacity
-                            style={styles.filterSelect}
-                            onPress={() => openDropdown('City', CITIES, (v) => setCity(v))}
-                        >
-                            <ThemedText style={{ color: '#444' }}>{city}</ThemedText>
-                            <IconSymbol name="chevron.down" size={14} color={Colors.light.icon} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.filterSelect}
-                            onPress={() => openDropdown('Breed', BREEDS, (v) => setBreedFilter(v))}
-                        >
-                            <ThemedText style={{ color: '#444' }}>{breedFilter}</ThemedText>
-                            <IconSymbol name="chevron.down" size={14} color={Colors.light.icon} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.filterRow}>
-                        <TouchableOpacity
-                            style={styles.filterSelect}
-                            onPress={() => openDropdown('Gender', ['Any', 'Male', 'Female'], (v) => setGenderFilter(v as any))}
-                        >
-                            <ThemedText style={{ color: '#444' }}>{genderFilter}</ThemedText>
-                            <IconSymbol name="chevron.down" size={14} color={Colors.light.icon} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.filterSelect}
-                            onPress={() => openDropdown('Size', SIZES, (v) => setSizeFilter(v))}
-                        >
-                            <ThemedText style={{ color: '#444' }}>{sizeFilter}</ThemedText>
-                            <IconSymbol name="chevron.down" size={14} color={Colors.light.icon} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.attributesRow}>
-                        <TouchableOpacity style={[styles.attr, childFriendly && styles.attrActive]} onPress={() => setChildFriendly((v) => !v)}>
-                            <ThemedText style={childFriendly ? { color: '#fff' } : { color: '#444' }}>Child Friendly</ThemedText>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.attr, vaccinated && styles.attrActive]} onPress={() => setVaccinated((v) => !v)}>
-                            <ThemedText style={vaccinated ? { color: '#fff' } : { color: '#444' }}>Vaccinated</ThemedText>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.attr, neutered && styles.attrActive]} onPress={() => setNeutered((v) => !v)}>
-                            <ThemedText style={neutered ? { color: '#fff' } : { color: '#444' }}>Neutered / Spayed</ThemedText>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.attr, houseTrained && styles.attrActive]} onPress={() => setHouseTrained((v) => !v)}>
-                            <ThemedText style={houseTrained ? { color: '#fff' } : { color: '#444' }}>House Trained</ThemedText>
-                        </TouchableOpacity>
-                    </View>
-
-                </View>
-            )}
 
             <ThemedText style={styles.resultsCount}>{filtered.length} pets found</ThemedText>
         </View>
     );
 
+    const ListFooter = () => {
+        if (displayed.length === 0) return null;
+        if (loadingMore) return (
+            <View style={{ padding: 12, alignItems: 'center' }}>
+                <ActivityIndicator />
+            </View>
+        );
+        if (displayed.length < filtered.length) return (
+            <View style={{ padding: 12, alignItems: 'center' }}>
+                <TouchableOpacity onPress={loadMore} style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: tint, borderRadius: 8 }}>
+                    <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Load more</ThemedText>
+                </TouchableOpacity>
+            </View>
+        );
+        return (
+            <View style={{ height: 32 }} />
+        );
+    };
+
     return (
         <ThemedView style={styles.container}>
             <FlatList
-                data={filtered}
+                data={displayed}
                 keyExtractor={(i) => i.id}
                 contentContainerStyle={styles.list}
                 ListHeaderComponent={ListHeader}
+                ListFooterComponent={ListFooter}
                 keyboardShouldPersistTaps="always"
                 keyboardDismissMode="none"
                 removeClippedSubviews={false}
-                refreshing={useReload().refreshing}
-                onRefresh={useReload().triggerRefresh}
+                refreshing={reload.refreshing}
+                onRefresh={() => { setPage(1); reload.triggerRefresh(); }}
+                onEndReached={() => loadMore()}
+                onEndReachedThreshold={0.5}
                 renderItem={({ item }) => (
                     <TouchableOpacity style={styles.card} onPress={() => router.push(`/pet/${item.id}` as any)}>
                         <View>
@@ -215,6 +189,73 @@ export default function AdoptScreen() {
                     </TouchableOpacity>
                 )}
             />
+            {/* Filters modal (simplified mobile UI) */}
+            <Modal visible={filterOpen} animationType="slide" transparent onRequestClose={() => setFilterOpen(false)}>
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' }}>
+                    <SafeAreaView style={{ backgroundColor: '#fff', maxHeight: '80%', borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>
+                        <View style={{ padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#eee', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <ThemedText type="defaultSemiBold">Filters</ThemedText>
+                            <TouchableOpacity onPress={() => setFilterOpen(false)} style={{ padding: 6 }}>
+                                <ThemedText style={{ color: tint }}>Close</ThemedText>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{ padding: 12 }}>
+                            <View style={styles.filterRow}>
+                                <TouchableOpacity style={styles.filterSelect} onPress={() => openDropdown('City', CITIES, (v) => setCity(v))}>
+                                    <ThemedText style={{ color: '#444' }}>{city}</ThemedText>
+                                    <IconSymbol name="chevron.down" size={14} color={Colors.light.icon} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.filterSelect} onPress={() => openDropdown('Breed', BREEDS, (v) => setBreedFilter(v))}>
+                                    <ThemedText style={{ color: '#444' }}>{breedFilter}</ThemedText>
+                                    <IconSymbol name="chevron.down" size={14} color={Colors.light.icon} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.filterRow}>
+                                <TouchableOpacity style={styles.filterSelect} onPress={() => openDropdown('Gender', ['Any', 'Male', 'Female'], (v) => setGenderFilter(v as any))}>
+                                    <ThemedText style={{ color: '#444' }}>{genderFilter}</ThemedText>
+                                    <IconSymbol name="chevron.down" size={14} color={Colors.light.icon} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.filterSelect} onPress={() => openDropdown('Size', SIZES, (v) => setSizeFilter(v))}>
+                                    <ThemedText style={{ color: '#444' }}>{sizeFilter}</ThemedText>
+                                    <IconSymbol name="chevron.down" size={14} color={Colors.light.icon} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.attributesRow}>
+                                <TouchableOpacity style={[styles.attr, childFriendly && styles.attrActive]} onPress={() => setChildFriendly((v) => !v)}>
+                                    <ThemedText style={childFriendly ? { color: '#fff' } : { color: '#444' }}>Child Friendly</ThemedText>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={[styles.attr, vaccinated && styles.attrActive]} onPress={() => setVaccinated((v) => !v)}>
+                                    <ThemedText style={vaccinated ? { color: '#fff' } : { color: '#444' }}>Vaccinated</ThemedText>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={[styles.attr, neutered && styles.attrActive]} onPress={() => setNeutered((v) => !v)}>
+                                    <ThemedText style={neutered ? { color: '#fff' } : { color: '#444' }}>Neutered / Spayed</ThemedText>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={[styles.attr, houseTrained && styles.attrActive]} onPress={() => setHouseTrained((v) => !v)}>
+                                    <ThemedText style={houseTrained ? { color: '#fff' } : { color: '#444' }}>House Trained</ThemedText>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={{ marginTop: 12, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+                                <TouchableOpacity onPress={() => { setCity(CITIES[0]); setBreedFilter(BREEDS[0]); setGenderFilter('Any'); setSizeFilter(SIZES[0]); setChildFriendly(false); setVaccinated(false); setNeutered(false); setHouseTrained(false); }} style={{ padding: 10 }}>
+                                    <ThemedText>Reset</ThemedText>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity onPress={() => { setFilterOpen(false); setPage(1); }} style={{ paddingHorizontal: 14, paddingVertical: 10, backgroundColor: tint, borderRadius: 8 }}>
+                                    <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Apply</ThemedText>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </SafeAreaView>
+                </View>
+            </Modal>
             {/* Dropdown modal for filter selectors */}
             <Modal visible={dropdownVisible} animationType="slide" transparent onRequestClose={() => setDropdownVisible(false)}>
                 <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' }}>

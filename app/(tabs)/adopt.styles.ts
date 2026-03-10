@@ -2,9 +2,9 @@ import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerBlock: { padding: 16 },
+  headerBlock: { paddingTop: 10, paddingHorizontal: 2 },
   title: { fontSize: 20, marginBottom: 6 },
-  subtitle: { color: "#666", marginBottom: 12 },
+  subtitle: { color: "#666", marginBottom: 6 },
   primaryButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -12,22 +12,20 @@ export const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     alignSelf: "flex-start",
-    marginBottom: 12,
   },
   primaryButtonText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
-  controlsRow: { flexDirection: "row", alignItems: "center" },
+  controlsRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   searchWrap: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
     paddingHorizontal: 12,
-    paddingVertical: 8,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "#eee",
   },
-  searchInput: { marginLeft: 8, flex: 1, height: 34 },
+  searchInput: { marginLeft: 4, flex: 1, height: 40 },
   selector: {
     marginLeft: 12,
     flexDirection: "row",
