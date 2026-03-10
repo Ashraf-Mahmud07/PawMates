@@ -89,6 +89,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginTop: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#eee",
   },
   textarea: {
     height: 100,
@@ -134,10 +136,41 @@ export const styles = StyleSheet.create({
     marginLeft: 8,
   },
   moreBadge: {
+    // kept for backward-compat, prefer using moreBadgePill + moreBadgeText
     backgroundColor: "#f2f2f2",
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 12,
     color: "#666",
+    textAlign: "center",
+    minWidth: 48,
+  },
+  moreBadgePill: {
+    backgroundColor: "#f2f2f2",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    minWidth: 54,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moreBadgeText: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingTop: 10,
+  },
+  backCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
   },
 });
