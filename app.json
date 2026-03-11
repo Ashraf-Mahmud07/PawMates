@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "PawmatesBD",
-    "slug": "pawmatesbd",
+    "slug": "pawmates",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "pawmatesbd",
+    "scheme": "pawmates",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

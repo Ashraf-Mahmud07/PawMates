@@ -13,7 +13,9 @@ import Toast from 'react-native-toast-message';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  anchor: "(tabs)",
+  // The anchor must reference an existing layout file. Use the group's layout
+  // path so the router can resolve nested layouts during static export.
+  anchor: '(tabs)/_layout',
 };
 
 export default function RootLayout() {
