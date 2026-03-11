@@ -13,9 +13,7 @@ import Toast from 'react-native-toast-message';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  // anchor should reference the existing group layout file. Change from '(tabs)'
-  // to the actual layout path '(tabs)/_layout' so the router can resolve it.
-  anchor: '(tabs)/_layout',
+  anchor: "(tabs)",
 };
 
 export default function RootLayout() {
@@ -115,12 +113,12 @@ export default function RootLayout() {
           style={{ flex: 1, backgroundColor: Colors[colorScheme ?? 'light'].background }}>
           <ReloadProvider>
             <SideDrawerProvider>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            </Stack>
-            <Toast config={toastConfig} />
-            <StatusBar style="auto" />
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              </Stack>
+              <Toast config={toastConfig} />
+              <StatusBar style="auto" />
             </SideDrawerProvider>
           </ReloadProvider>
         </SafeAreaView>
