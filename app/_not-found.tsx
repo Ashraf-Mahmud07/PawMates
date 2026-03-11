@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Image, View } from 'react-native';
 
 export default function NotFound() {
   const router = useRouter();
@@ -18,6 +18,8 @@ export default function NotFound() {
   return (
     <ThemedView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <View style={{ alignItems: 'center' }}>
+        {/* App icon from assets */}
+        <Image source={require('../assets/images/icon.png')} style={{ width: 84, height: 84, borderRadius: 18, marginBottom: 12 }} />
         <ActivityIndicator />
         <ThemedText style={{ marginTop: 12 }}>Route not found — returning home…</ThemedText>
       </View>
