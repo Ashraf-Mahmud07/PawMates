@@ -67,6 +67,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="lost"
+        options={{
+          title: 'Lost & Found',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="magnifyingglass" focused={!!focused} color={focused ? colors.tint : colors.icon} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="meet"
         options={{
           title: 'Meet',
