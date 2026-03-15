@@ -1,6 +1,7 @@
 import { useReload } from '@/components/reload-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, Image as RNImage, TouchableOpacity, View } from 'react-native';
 import { styles } from './lost.styles';
@@ -81,6 +82,7 @@ const DATA: Post[] = [
 export default function Lost() {
   const [tab, setTab] = useState<'Lost' | 'Found'>('Lost');
   const { refreshing, triggerRefresh } = useReload();
+  const router = useRouter();
 
   const items = useMemo(() => DATA.filter((d) => d.status === tab), [tab]);
 
@@ -89,10 +91,10 @@ export default function Lost() {
       <View style={styles.imageWrap}>
         <RNImage source={{ uri: item.image }} style={styles.cardImage} />
         <View style={[styles.pill, item.status === 'Lost' ? styles.pillLost : styles.pillFound]}>
-          <ThemedText style={styles.pillText}>{item.status}</ThemedText>
+          <ThemedText type="defaultSemiBold" style={styles.pillText}>{item.status}</ThemedText>
         </View>
         {item.reward ? (
-          <View style={styles.rewardPill}><ThemedText style={styles.rewardText}>Reward: {item.reward}</ThemedText></View>
+          <View style={styles.rewardPill}><ThemedText type="defaultSemiBold" style={styles.rewardText}>Reward: {item.reward}</ThemedText></View>
         ) : null}
       </View>
 
@@ -124,28 +126,28 @@ export default function Lost() {
         ListHeaderComponent={() => (
           <>
             <View style={styles.headerTop}>
-              <ThemedText type="title" style={{ marginBottom: 6, color: '#263238' }}>Lost & Found</ThemedText>
+              <ThemedText type="subtitle" style={styles.headerTitle}>Lost & Found</ThemedText>
               <ThemedText style={styles.headerSubtitle}>Help reunite lost pets with their families. Report a missing or found pet.</ThemedText>
 
               <View style={{ height: 12 }} />
               <View style={styles.actionsRow}>
-                <TouchableOpacity style={[styles.actionButton, styles.btnLost]} activeOpacity={0.9}>
+                <TouchableOpacity style={[styles.actionButton, styles.btnLost]} activeOpacity={0.9} onPress={() => router.push('/report-lost')}>
                   <ThemedText style={styles.actionEmoji}>⚠️</ThemedText>
-                  <ThemedText style={styles.actionText}>Report Lost</ThemedText>
+                  <ThemedText type="defaultSemiBold" style={styles.actionText}>Report Lost</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionButton, styles.btnFound]} activeOpacity={0.9}>
+                <TouchableOpacity style={[styles.actionButton, styles.btnFound]} activeOpacity={0.9} onPress={() => router.push('/report-found')}>
                   <ThemedText style={styles.actionEmoji}>🔎</ThemedText>
-                  <ThemedText style={styles.actionText}>Report Found</ThemedText>
+                  <ThemedText type="defaultSemiBold" style={styles.actionText}>Report Found</ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.segmentRow}>
               <TouchableOpacity style={[styles.segment, tab === 'Lost' && styles.segmentActive]} onPress={() => setTab('Lost')}>
-                <ThemedText style={[styles.segmentText, tab === 'Lost' && styles.segmentTextActive]}>Lost ({DATA.filter(d => d.status === 'Lost').length})</ThemedText>
+                <ThemedText type={tab === 'Lost' ? 'defaultSemiBold' : 'default'} style={styles.segmentText}>Lost ({DATA.filter(d => d.status === 'Lost').length})</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.segment, tab === 'Found' && styles.segmentActive]} onPress={() => setTab('Found')}>
-                <ThemedText style={[styles.segmentText, tab === 'Found' && styles.segmentTextActive]}>Found ({DATA.filter(d => d.status === 'Found').length})</ThemedText>
+                <ThemedText type={tab === 'Found' ? 'defaultSemiBold' : 'default'} style={styles.segmentText}>Found ({DATA.filter(d => d.status === 'Found').length})</ThemedText>
               </TouchableOpacity>
             </View>
           </>

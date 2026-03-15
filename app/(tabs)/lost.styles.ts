@@ -5,6 +5,7 @@ export const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#FBF9F7" },
   headerTop: { marginBottom: 12 },
   headerSubtitle: { color: "#7a7a7a", marginBottom: 12, lineHeight: 20 },
+  headerTitle: { marginBottom: 6, color: "#263238" },
 
   // CTAs
   actionsRow: { flexDirection: "row", gap: 8 },
@@ -44,7 +45,7 @@ export const styles = StyleSheet.create({
   },
   segmentActive: { backgroundColor: "#fff", borderColor: "rgba(0,0,0,0.06)" },
   segmentText: { color: "#7a7a7a" },
-  segmentTextActive: { color: "#FF7A59", fontWeight: "800" },
+  segmentTextActive: { color: "#FF7A59" },
 
   // list
   list: { paddingBottom: 100 },
@@ -74,7 +75,7 @@ export const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  pillText: { color: "#fff", fontWeight: "800" },
+  pillText: { color: "#fff" },
   pillLost: { backgroundColor: "#FF6B5A" },
   pillFound: { backgroundColor: "#FFB86B" },
   rewardPill: {
@@ -90,11 +91,11 @@ export const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  rewardText: { color: "#fff", fontWeight: "700" },
+  rewardText: { color: "#fff" },
 
   // body
   cardBody: { padding: 16 },
-  cardTitle: { fontSize: 18, marginBottom: 6, fontWeight: "800" },
+  cardTitle: { fontSize: 18, marginBottom: 6 },
   cardMeta: { color: "#8a8a8a", marginBottom: 10 },
   cardFooter: {
     flexDirection: "row",
