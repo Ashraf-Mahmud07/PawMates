@@ -12,13 +12,15 @@ type IncomingMessage = {
 let socket: Socket | null = null;
 let messageHandlers: ((msg: IncomingMessage) => void)[] = [];
 
-export function connectSocket(url = "") {
+export function connectSocket(url = "", token?: string) {
   if (!url) return;
   if (socket) return;
-  socket = io(url, { transports: ["websocket"] });
+  const opts: any = { transports: ["websocket"], reconnection: true };
+  if (token) opts.auth = { token };
+  socket = io(url, opts);
 
   socket.on("connect", () => {
-    // console.log('socket connected', socket?.id);
+    console.log("socket connected", socket?.id);
   });
 
   socket.on("message", (payload: IncomingMessage) => {

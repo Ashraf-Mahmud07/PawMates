@@ -3,8 +3,9 @@ import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getConversations } from '@/services/chat.api';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { styles as indexStyles } from './index.styles';
@@ -30,9 +31,27 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const list = data ?? SAMPLE;
+  const [list, setList] = useState<Conversation[]>(data ?? SAMPLE);
   const tint = Colors[colorScheme ?? 'light'].tint;
   const { openDrawer } = useSideDrawer();
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const res = await getConversations();
+        if (mounted && Array.isArray(res)) setList(res);
+      } catch {
+        // ignore - keep sample data
+      }
+    }
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  
 
 
   const renderRow = ({ item }: { item: Conversation }) => {

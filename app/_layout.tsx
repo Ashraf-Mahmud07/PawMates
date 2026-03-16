@@ -12,6 +12,39 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getToken } from '@/services/auth.service';
+import { connectSocket, disconnectSocket } from '@/services/chat.service';
+import Constants from 'expo-constants';
+import React, { useEffect } from 'react';
+
+// Small invisible connector component: reads CHAT URL from app config or env
+function SocketConnector() {
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // expo constants shape differs by SDK; check both expoConfig and manifest
+        const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
+        const url = (extra?.chatUrl as string) || (process.env.CHAT_API_URL as string) || '';
+        const token = await getToken();
+        if (mounted && url) {
+          connectSocket(url, token ?? undefined);
+        }
+      } catch {
+        // ignore - best effort
+      }
+    })();
+    return () => {
+      try {
+        disconnectSocket();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
+  return null;
+}
 
 export const unstable_settings = {
   // The anchor must reference an existing layout file. Use the group's layout
@@ -114,6 +147,10 @@ export default function RootLayout() {
         <SafeAreaView
           edges={["top"]}
           style={{ flex: 1, backgroundColor: Colors[colorScheme ?? 'light'].background }}>
+          {/* Connect the socket on app start if CHAT_API_URL is provided in app config or env. */}
+          {/* Preferred: set CHAT_API_URL in app.json -> expo.extra.chatUrl or via EAS secrets. */}
+          {/** Connect/disconnect lifecycle */}
+          <SocketConnector />
           <ReloadProvider>
             <SideDrawerProvider>
               <Stack>

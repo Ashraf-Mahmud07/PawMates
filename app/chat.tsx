@@ -5,6 +5,7 @@ import MessageBubble from '@/components/ui/MessageBubble';
 import TypingIndicator from '@/components/ui/TypingIndicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getMessages, markRead, sendMessageAPI } from '@/services/chat.api';
 import { emitMessage, listenMessages } from '@/services/chat.service';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -64,6 +65,22 @@ export default function ChatScreen() {
       { id: `${conversationId}-2`, text: 'This is a demo thread. Say hi!', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), senderId: 'me' },
     ];
     setMessages(seeded);
+
+    // load actual messages from API if available
+    (async () => {
+      try {
+        const res = await getMessages(conversationId);
+        if (Array.isArray(res)) setMessages(res);
+        // mark as read
+        try {
+          await markRead(conversationId);
+        } catch {
+          // ignore
+        }
+      } catch {
+        // keep seeded
+      }
+    })();
   }, [conversationId]);
 
   useEffect(() => {
@@ -91,6 +108,8 @@ export default function ChatScreen() {
     setMessages(prev => [...prev, newMsg]);
     // emit via chat service for future socket hookup
     try {
+      // optimistic send: call API and emit socket event
+      sendMessageAPI(conversationId ?? 'default', newMsg.text).catch(() => {});
       emitMessage(conversationId ?? 'default', newMsg.text);
     } catch {
       // ignore if socket not connected
