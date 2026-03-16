@@ -1,5 +1,6 @@
 import { ReloadProvider } from '@/components/reload-context';
 import { SideDrawerProvider } from '@/components/side-drawer-context';
+import NotificationBanner from '@/components/ui/NotificationBanner';
 import { Colors } from '@/constants/theme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -119,6 +120,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
               </Stack>
+              <NotificationBanner />
               <Toast config={toastConfig} />
               <StatusBar style="auto" />
             </SideDrawerProvider>

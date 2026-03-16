@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 
-export const styles = StyleSheet.create({
+export const tabLayoutStyles = StyleSheet.create({
   iconContainer: {
     alignItems: "center",
     justifyContent: "center",
