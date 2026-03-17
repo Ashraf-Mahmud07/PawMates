@@ -1,5 +1,6 @@
-import { register as registerApi } from '@/services/auth.service';
+import { saveToken, saveUser } from '@/services/auth.service';
 import { connectSocket } from '@/services/chat.service';
+import { useRegisterMutation } from '@/services/rtkApi';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -11,11 +12,14 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [registerMutation, { isLoading }] = useRegisterMutation();
 
   const submit = async () => {
     setError(null);
     try {
-      const res: any = await registerApi(name, email, password);
+      const res: any = await registerMutation({ name, email, password }).unwrap();
+      if (res?.token) await saveToken(res.token);
+      if (res?.user) await saveUser(res.user);
       // connect socket after register
       try {
         const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
@@ -37,7 +41,7 @@ export default function RegisterScreen() {
         <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
         <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" autoCapitalize="none" />
         <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
-        <Button title="Register" onPress={submit} />
+        <Button title={`${isLoading ? 'Registering...' : 'Register'}`} onPress={submit} />
       </View>
     </KeyboardAvoidingView>
   );

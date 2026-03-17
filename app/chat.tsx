@@ -5,8 +5,8 @@ import MessageBubble from '@/components/ui/MessageBubble';
 import TypingIndicator from '@/components/ui/TypingIndicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getMessages, markRead, sendMessageAPI } from '@/services/chat.api';
 import { emitMessage, listenMessages } from '@/services/chat.service';
+import { useGetMessagesQuery, useMarkReadMutation, useSendMessageMutation } from '@/services/rtkApi';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -28,11 +28,7 @@ export default function ChatScreen() {
   // safe area inset currently unused; ChatInput handles its own spacing
 
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '1', text: 'Hey there! Have you seen a tabby near the park?', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), senderId: 'other' },
-    { id: '2', text: 'Not yet — I will keep an eye out.', timestamp: new Date(Date.now() - 1000 * 60 * 50).toISOString(), senderId: 'me' },
-    { id: '3', text: "Thanks — I'll share a photo if I spot anything.", timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), senderId: 'other' },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const flatListRef = useRef<FlatList>(null);
   const params = useLocalSearchParams();
@@ -56,32 +52,30 @@ export default function ChatScreen() {
     return unsub;
   }, [conversationId]);
 
-  // If conversationId changes, optionally seed messages for demo purpose
+  // RTK Query: fetch messages and mark read
+  const { data: fetchedMessages } = useGetMessagesQuery(conversationId, { skip: !conversationId });
+  const [sendMessageMutation] = useSendMessageMutation();
+  const [markReadMutation] = useMarkReadMutation();
+
   useEffect(() => {
     if (!conversationId) return;
-    // simple demo: replace messages with a sample for this conversation
-    const seeded: Message[] = [
-      { id: `${conversationId}-1`, text: `Welcome to conversation ${conversationId}`, timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), senderId: 'other' },
-      { id: `${conversationId}-2`, text: 'This is a demo thread. Say hi!', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), senderId: 'me' },
-    ];
-    setMessages(seeded);
-
-    // load actual messages from API if available
-    (async () => {
+    if (Array.isArray(fetchedMessages)) {
+      setMessages(fetchedMessages as Message[]);
+      // mark as read in background
       try {
-        const res = await getMessages(conversationId);
-        if (Array.isArray(res)) setMessages(res);
-        // mark as read
-        try {
-          await markRead(conversationId);
-        } catch {
-          // ignore
-        }
+        markReadMutation(conversationId).catch(() => {});
       } catch {
-        // keep seeded
+        // ignore
       }
-    })();
-  }, [conversationId]);
+    } else {
+      // seeded fallback for new/empty conversations
+      const seeded: Message[] = [
+        { id: `${conversationId}-1`, text: `Welcome to conversation ${conversationId}`, timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), senderId: 'other' },
+        { id: `${conversationId}-2`, text: 'This is a demo thread. Say hi!', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), senderId: 'me' },
+      ];
+      setMessages(seeded);
+    }
+  }, [conversationId, fetchedMessages, markReadMutation]);
 
   useEffect(() => {
     // scroll to end when messages change
@@ -97,24 +91,33 @@ export default function ChatScreen() {
     return () => clearTimeout(t);
   }, [messages]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
+    const text = input.trim();
     const newMsg: Message = {
       id: Date.now().toString(),
-      text: input.trim(),
+      text,
       timestamp: new Date().toISOString(),
       senderId: 'me',
     };
+    // optimistic update
     setMessages(prev => [...prev, newMsg]);
-    // emit via chat service for future socket hookup
+    setInput('');
+
     try {
-      // optimistic send: call API and emit socket event
-      sendMessageAPI(conversationId ?? 'default', newMsg.text).catch(() => {});
-      emitMessage(conversationId ?? 'default', newMsg.text);
+      // call RTK mutation
+      await sendMessageMutation({ conversationId: conversationId ?? 'default', text }).unwrap();
+    } catch (err) {
+      // if send failed, we keep optimistic UI but could show an error later
+      console.error('sendMessage failed', err);
+    }
+
+    // also emit socket message for realtime
+    try {
+      emitMessage(conversationId ?? 'default', text);
     } catch {
       // ignore if socket not connected
     }
-    setInput('');
   };
 
   // submit via ChatInput's send button; inline submit handler removed

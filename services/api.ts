@@ -49,7 +49,12 @@ function deriveBase() {
 
 export const API_BASE = deriveBase();
 
-const client = axios.create({ baseURL: API_BASE });
+console.log("API_BASE derived as ->", API_BASE);
+
+const client = axios.create({
+  baseURL: API_BASE || undefined,
+  headers: { "Content-Type": "application/json" },
+});
 
 // attach auth header before requests
 client.interceptors.request.use(async (config) => {

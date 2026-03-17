@@ -1,6 +1,6 @@
-import { API_BASE } from '@/services/api';
-import { login as loginApi } from '@/services/auth.service';
+import { saveToken, saveUser } from '@/services/auth.service';
 import { connectSocket } from '@/services/chat.service';
+import { useLoginMutation } from '@/services/rtkApi';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -11,12 +11,17 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [loginMutation, { isLoading: loginLoading, isSuccess }] = useLoginMutation();
+
+  console.log('LoginScreen rendered=', loginLoading, isSuccess);
 
   const submit = async () => {
     setError(null);
-    console.log('Login attempt, API_BASE=', API_BASE);
     try {
-      const res: any = await loginApi(email, password);
+      const res: any = await loginMutation({ email, password }).unwrap();
+      // save token/user
+      if (res?.token) await saveToken(res.token);
+      if (res?.user) await saveUser(res.user);
       console.log('Login success:', res);
       // connect socket after login
       try {
@@ -28,7 +33,8 @@ export default function LoginScreen() {
       router.replace('/');
     } catch (err: any) {
       const msg = err?.message ?? 'Login failed';
-      setError(msg + (API_BASE ? `\n(API_BASE=${API_BASE})` : '\n(API_BASE not set)'));
+      console.error('Login error:', err);
+      setError(msg);
     }
   };
 
@@ -39,7 +45,7 @@ export default function LoginScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" autoCapitalize="none" />
         <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
-        <Button title="Login" onPress={submit} />
+        <Button title={`${loginLoading ? 'Logging in...' : 'Login'}`} onPress={submit} />
       </View>
     </KeyboardAvoidingView>
   );

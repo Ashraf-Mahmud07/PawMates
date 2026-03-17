@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { API_BASE } from "./api";
+import client, { API_BASE } from "./api";
 
 const TOKEN_KEY = "pawmates_token";
 const USER_KEY = "pawmates_user";
@@ -57,48 +57,42 @@ export async function register(name: string, email: string, password: string) {
     throw new Error(
       "API base URL is not configured. Set expo.extra.chatApiUrl or CHAT_API_URL environment variable.",
     );
-  const url = `${API_BASE}/api/auth/register`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
-  });
-  if (!res.ok) {
-    let errorBody = "";
-    try {
-      errorBody = await res.text();
-    } catch {}
-    throw new Error(`Register failed: ${res.status} ${errorBody}`);
+  try {
+    const res = await client.post("/api/auth/register", {
+      name,
+      email,
+      password,
+    });
+    const body = res.data;
+    if (body?.token) await saveToken(body.token);
+    if (body?.user) await saveUser(body.user);
+    return body;
+  } catch (err: any) {
+    const server =
+      err?.response?.data ?? err?.response?.statusText ?? err?.message;
+    console.error("Register error", { err, response: err?.response });
+    throw new Error(`Register failed: ${server}`);
   }
-  const body = await res.json();
-  if (body?.token) await saveToken(body.token);
-  if (body?.user) await saveUser(body.user);
-  return body;
 }
 
 export async function login(email: string, password: string) {
-  console.log("Login API called with API_BASE=", email, password, API_BASE);
+  console.log("Login API called with API_BASE=", API_BASE);
   if (!API_BASE)
     throw new Error(
       "API base URL is not configured. Set expo.extra.chatApiUrl or CHAT_API_URL environment variable.",
     );
-  const url = `${API_BASE}/api/auth/login`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) {
-    let errorBody = "";
-    try {
-      errorBody = await res.text();
-    } catch {}
-    throw new Error(`Login failed: ${res.status} ${errorBody}`);
+  try {
+    const res = await client.post("/api/auth/login", { email, password });
+    const body = res.data;
+    if (body?.token) await saveToken(body.token);
+    if (body?.user) await saveUser(body.user);
+    return body;
+  } catch (err: any) {
+    const server =
+      err?.response?.data ?? err?.response?.statusText ?? err?.message;
+    console.error("Login error", { err, response: err?.response });
+    throw new Error(`Login failed: ${server}`);
   }
-  const body = await res.json();
-  if (body?.token) await saveToken(body.token);
-  if (body?.user) await saveUser(body.user);
-  return body;
 }
 
 export default {

@@ -14,8 +14,10 @@ import Toast from 'react-native-toast-message';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getToken } from '@/services/auth.service';
 import { connectSocket, disconnectSocket } from '@/services/chat.service';
+import store from '@/store/store';
 import Constants from 'expo-constants';
 import React, { useEffect } from 'react';
+import { Provider } from 'react-redux';
 
 // Small invisible connector component: reads CHAT URL from app config or env
 function SocketConnector() {
@@ -151,8 +153,9 @@ export default function RootLayout() {
           {/* Preferred: set CHAT_API_URL in app.json -> expo.extra.chatUrl or via EAS secrets. */}
           {/** Connect/disconnect lifecycle */}
           <SocketConnector />
-          <ReloadProvider>
-            <SideDrawerProvider>
+          <Provider store={store}>
+            <ReloadProvider>
+              <SideDrawerProvider>
               <Stack>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
@@ -160,8 +163,9 @@ export default function RootLayout() {
               <NotificationBanner />
               <Toast config={toastConfig} />
               <StatusBar style="auto" />
-            </SideDrawerProvider>
-          </ReloadProvider>
+              </SideDrawerProvider>
+            </ReloadProvider>
+          </Provider>
         </SafeAreaView>
       </SafeAreaProvider>
     </ThemeProvider>
