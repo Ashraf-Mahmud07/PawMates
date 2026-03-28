@@ -76,15 +76,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="meet"
-        options={{
-          title: 'Meet',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="sportscourt" focused={!!focused} color={focused ? colors.tint : colors.icon} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="chat-list"
         options={{
           title: 'Chat',

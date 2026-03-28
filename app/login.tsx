@@ -1,6 +1,5 @@
 import { saveToken, saveUser } from '@/services/auth.service';
 import { connectSocket } from '@/services/chat.service';
-import { useLoginMutation } from '@/services/rtkApi';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -11,14 +10,24 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const [loginMutation, { isLoading: loginLoading, isSuccess }] = useLoginMutation();
-
-  console.log('LoginScreen rendered=', loginLoading, isSuccess);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const submit = async () => {
     setError(null);
     try {
-      const res: any = await loginMutation({ email, password }).unwrap();
+      setLoginLoading(true);
+      const url = `${'http://192.168.10.152:5000'}/api/auth/login`;
+      console.log('Login API called with url=', url);
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const res: any = await r.json();
+      if (!r.ok) {
+        const msg = res?.message || res?.error || `Login failed (${r.status})`;
+        throw new Error(msg);
+      }
       // save token/user
       if (res?.token) await saveToken(res.token);
       if (res?.user) await saveUser(res.user);
@@ -35,6 +44,8 @@ export default function LoginScreen() {
       const msg = err?.message ?? 'Login failed';
       console.error('Login error:', err);
       setError(msg);
+    } finally {
+      setLoginLoading(false);
     }
   };
 

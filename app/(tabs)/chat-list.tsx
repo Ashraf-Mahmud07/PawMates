@@ -6,7 +6,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useGetConversationsQuery } from '@/services/rtkApi';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { styles as indexStyles } from './index.styles';
 
@@ -19,28 +19,33 @@ type Conversation = {
   unread: number;
 };
 
-const SAMPLE: Conversation[] = [
-  { id: 'c1', user: { id: 'u1', name: 'Alex Johnson' }, lastMessage: 'I found a little tabby near the store', lastTimestamp: new Date().toISOString(), unread: 2 },
-  { id: 'c2', user: { id: 'u2', name: 'Priya Shah' }, lastMessage: 'Thanks — that helped a lot!', lastTimestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), unread: 0 },
-  { id: 'c3', user: { id: 'u3', name: 'Sam K.' }, lastMessage: "Let's meet tomorrow", lastTimestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), unread: 5 },
-  { id: 'c4', user: { id: 'u4', name: 'Dallas Kelso' }, lastMessage: 'See you tomorrow', lastTimestamp: new Date(Date.now() - 1500 * 60 * 60 * 6).toISOString(), unread: 3 },
-];
+// const SAMPLE: Conversation[] = [
+//   { id: 'c1', user: { id: 'u1', name: 'Alex Johnson' }, lastMessage: 'I found a little tabby near the store', lastTimestamp: new Date().toISOString(), unread: 2 },
+//   { id: 'c2', user: { id: 'u2', name: 'Priya Shah' }, lastMessage: 'Thanks — that helped a lot!', lastTimestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), unread: 0 },
+//   { id: 'c3', user: { id: 'u3', name: 'Sam K.' }, lastMessage: "Let's meet tomorrow", lastTimestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), unread: 5 },
+//   { id: 'c4', user: { id: 'u4', name: 'Dallas Kelso' }, lastMessage: 'See you tomorrow', lastTimestamp: new Date(Date.now() - 1500 * 60 * 60 * 6).toISOString(), unread: 3 },
+// ];
 
 export default function ChatListScreen({ data }: { data?: Conversation[] }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [list, setList] = useState<Conversation[]>(data ?? SAMPLE);
+  const [list, setList] = useState<Conversation[]>(data ?? []);
   const tint = Colors[colorScheme ?? 'light'].tint;
   const { openDrawer } = useSideDrawer();
 
-  const { data: fetched, isLoading } = useGetConversationsQuery();
+  const { data: fetched, isLoading, isError, refetch } = useGetConversationsQuery();
   React.useEffect(() => {
     if (Array.isArray(fetched)) setList(fetched);
   }, [fetched]);
 
-  
+  // useEffect(() => {
+  //   fetch("https://jsonplaceholder.typicode.com/posts/1")
+  //     .then(res => res.json())
+  //     .then(data => console.log(data))
+  //     .catch(err => console.log(err));
+  // }, []);
 
 
   const renderRow = ({ item }: { item: Conversation }) => {
@@ -126,12 +131,37 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
         <View style={indexStyles.iconButton} />
       </View>
 
-      <FlatList
-        data={list}
-        keyExtractor={i => i.id}
-        renderItem={renderRow}
-        contentContainerStyle={{ padding: 12 }}
-      />
+      {/* Loading state */}
+      {isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={tint} />
+          <Text style={[styles.loadingText, { color: colors.icon, marginTop: 12 }]}>Loading conversations…</Text>
+        </View>
+      ) : isError ? (
+        <View style={styles.centered}>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Unable to load conversations</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.icon, marginTop: 6 }]}>There was a problem fetching your conversations. Check your connection and try again.</Text>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: tint }]} onPress={() => refetch()}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : /* Empty / not found state */ (list.length === 0) ? (
+        <View style={styles.centered}>
+          <IconSymbol name="bubble.left" size={48} color={tint} />
+          <Text style={[styles.emptyTitle, { color: colors.text, marginTop: 12 }]}>No conversations yet</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.icon, marginTop: 6 }]}>Start a new chat or ask someone to message you.</Text>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: tint }]} onPress={() => refetch()}>
+            <Text style={styles.retryText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={list}
+          keyExtractor={i => i.id}
+          renderItem={renderRow}
+          contentContainerStyle={{ padding: 12 }}
+        />
+      )}
       <View style={{ height: 60 }} />
     </View>
   );
@@ -152,6 +182,41 @@ function formatTime(iso?: string) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+
+  loadingText: {
+    fontSize: 14,
+    opacity: 0.9,
+  },
+
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginHorizontal: 12,
+  },
+
+  retryButton: {
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+
+  retryText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 
   card: {

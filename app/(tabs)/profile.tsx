@@ -2,7 +2,7 @@ import { useSideDrawer } from '@/components/side-drawer-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { getToken } from '@/services/auth.service';
+import { clearToken, getToken } from '@/services/auth.service';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -45,7 +45,16 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={{ width: 44 }} />
+          <TouchableOpacity onPress={async () => {
+            try {
+              await clearToken();
+              setIsLoggedIn(false);
+            } catch {
+              setIsLoggedIn(false);
+            }
+          }} style={{ paddingHorizontal: 8 }}>
+            <Text style={{ color: '#d9534f', fontWeight: '700' }}>Logout</Text>
+          </TouchableOpacity>
         )}
       </View>
     </ThemedView>

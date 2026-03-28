@@ -10,10 +10,7 @@ function deriveBase() {
       (Constants as any).manifest?.extra ??
       {};
     const apiUrl =
-      extra?.chatApiUrl ||
-      extra?.chatUrl ||
-      process.env.CHAT_API_URL ||
-      "http://localhost:5000/";
+      extra?.chatApiUrl || extra?.chatUrl || process.env.CHAT_API_URL;
     if (!apiUrl) return "";
     // if websocket URL provided, convert ws/wss -> http(s)
     let normalized = apiUrl
