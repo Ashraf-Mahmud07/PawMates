@@ -1,6 +1,6 @@
 import { saveToken, saveUser } from '@/services/auth.service';
 import { connectSocket } from '@/services/chat.service';
-import { useRegisterMutation } from '@/services/rtkApi';
+// using fetch directly (mirror login.tsx) instead of RTK mutation
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -12,12 +12,24 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const [registerMutation, { isLoading }] = useRegisterMutation();
+  const [registerLoading, setRegisterLoading] = useState(false);
 
   const submit = async () => {
     setError(null);
     try {
-      const res: any = await registerMutation({ name, email, password }).unwrap();
+      setRegisterLoading(true);
+      const url = `${'http://192.168.10.152:5000'}/api/auth/register`;
+      console.log('Register API called with url=', url);
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const res: any = await r.json();
+      if (!r.ok) {
+        const msg = res?.message || res?.error || `Register failed (${r.status})`;
+        throw new Error(msg);
+      }
       if (res?.token) await saveToken(res.token);
       if (res?.user) await saveUser(res.user);
       // connect socket after register
@@ -31,6 +43,9 @@ export default function RegisterScreen() {
     } catch (err: any) {
       setError(err?.message ?? 'Register failed');
     }
+    finally {
+      setRegisterLoading(false);
+    }
   };
 
   return (
@@ -41,7 +56,7 @@ export default function RegisterScreen() {
         <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
         <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" autoCapitalize="none" />
         <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
-        <Button title={`${isLoading ? 'Registering...' : 'Register'}`} onPress={submit} />
+  <Button title={`${registerLoading ? 'Registering...' : 'Register'}`} onPress={submit} />
       </View>
     </KeyboardAvoidingView>
   );
