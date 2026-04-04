@@ -1,5 +1,6 @@
 import { ReloadProvider } from '@/components/reload-context';
 import { SideDrawerProvider } from '@/components/side-drawer-context';
+import NotificationBanner from '@/components/ui/NotificationBanner';
 import { Colors } from '@/constants/theme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -11,6 +12,41 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getToken } from '@/services/auth.service';
+import { connectSocket, disconnectSocket } from '@/services/chat.service';
+import store from '@/store/store';
+import Constants from 'expo-constants';
+import React, { useEffect } from 'react';
+import { Provider } from 'react-redux';
+
+// Small invisible connector component: reads CHAT URL from app config or env
+function SocketConnector() {
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // expo constants shape differs by SDK; check both expoConfig and manifest
+        const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
+        const url = (extra?.chatUrl as string) || (process.env.CHAT_API_URL as string) || '';
+        const token = await getToken();
+        if (mounted && url) {
+          connectSocket(url, token ?? undefined);
+        }
+      } catch {
+        // ignore - best effort
+      }
+    })();
+    return () => {
+      try {
+        disconnectSocket();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
+  return null;
+}
 
 export const unstable_settings = {
   // The anchor must reference an existing layout file. Use the group's layout
@@ -113,16 +149,23 @@ export default function RootLayout() {
         <SafeAreaView
           edges={["top"]}
           style={{ flex: 1, backgroundColor: Colors[colorScheme ?? 'light'].background }}>
-          <ReloadProvider>
-            <SideDrawerProvider>
+          {/* Connect the socket on app start if CHAT_API_URL is provided in app config or env. */}
+          {/* Preferred: set CHAT_API_URL in app.json -> expo.extra.chatUrl or via EAS secrets. */}
+          {/** Connect/disconnect lifecycle */}
+          <SocketConnector />
+          <Provider store={store}>
+            <ReloadProvider>
+              <SideDrawerProvider>
               <Stack>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
               </Stack>
+              <NotificationBanner />
               <Toast config={toastConfig} />
               <StatusBar style="auto" />
-            </SideDrawerProvider>
-          </ReloadProvider>
+              </SideDrawerProvider>
+            </ReloadProvider>
+          </Provider>
         </SafeAreaView>
       </SafeAreaProvider>
     </ThemeProvider>

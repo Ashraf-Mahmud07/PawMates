@@ -76,11 +76,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="meet"
+        name="chat-list"
         options={{
-          title: 'Meet',
+          title: 'Chat',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="sportscourt" focused={!!focused} color={focused ? colors.tint : colors.icon} />
+            <TabIcon name="bubble.left.and.bubble.right.fill" focused={!!focused} color={focused ? colors.tint : colors.icon} />
           ),
         }}
       />

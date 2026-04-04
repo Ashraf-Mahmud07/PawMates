@@ -32,6 +32,11 @@ const MAPPING = {
   'slider.horizontal.3': 'tune',
   // extra mappings used by the bottom nav
   'pawprint.fill': 'pets',
+  // location / map pin
+  'mappin': 'place',
+  // book / document icons
+  'book': 'menu-book',
+  'doc.text': 'description',
   'sportscourt': 'sports',
   'bubble.left.and.bubble.right.fill': 'chat',
   'person.crop.circle': 'account-circle',
