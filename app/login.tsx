@@ -16,14 +16,32 @@ export default function LoginScreen() {
     setError(null);
     try {
       setLoginLoading(true);
-      const url = `${'http://192.168.10.26:5000'}/api/auth/login`;
-      console.log('Login API called with url=', url);
+      // derive API base from Expo constants or env (some platforms don't populate process.env)
+      const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
+      const base = (extra?.chatApiUrl as string) || (extra?.chatUrl as string) || (process.env.CHAT_API_URL as string) || '';
+      if (!base) throw new Error('API base URL is not configured (set expo.extra.chatApiUrl or CHAT_API_URL)');
+      const url = base.replace(/\/$/, '') + '/auth/login';
       const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const res: any = await r.json();
+      // Attempt to parse JSON only if server responds with JSON
+      let res: any = null;
+      const contentType = r.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          res = await r.json();
+        } catch {
+          throw new Error('Invalid JSON response from server');
+        }
+      } else {
+        // read text for better error messages
+        const text = await r.text();
+        if (!r.ok) throw new Error(text || `Login failed (${r.status})`);
+        // if OK but not JSON, return raw text
+        res = { message: text };
+      }
       if (!r.ok) {
         const msg = res?.message || res?.error || `Login failed (${r.status})`;
         throw new Error(msg);

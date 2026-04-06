@@ -18,7 +18,10 @@ export default function RegisterScreen() {
     setError(null);
     try {
       setRegisterLoading(true);
-      const url = `${'http://192.168.10.26:5000'}/api/auth/register`;
+      const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
+      const base = (extra?.chatApiUrl as string) || (extra?.chatUrl as string) || (process.env.CHAT_API_URL as string) || '';
+      if (!base) throw new Error('API base URL is not configured (set expo.extra.chatApiUrl or CHAT_API_URL)');
+      const url = base.replace(/\/$/, '') + '/auth/register';
       console.log('Register API called with url=', url);
       const r = await fetch(url, {
         method: 'POST',
@@ -56,7 +59,7 @@ export default function RegisterScreen() {
         <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
         <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" autoCapitalize="none" />
         <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
-  <Button title={`${registerLoading ? 'Registering...' : 'Register'}`} onPress={submit} />
+        <Button title={`${registerLoading ? 'Registering...' : 'Register'}`} onPress={submit} />
       </View>
     </KeyboardAvoidingView>
   );

@@ -52,7 +52,7 @@
       "eas": {
         "projectId": "b501d257-4d58-430c-87ed-2b0b454cdfe0"
       },
-      "chatApiUrl": "http://localhost:5000"
+      "chatApiUrl": "http://192.168.10.26:5000/api"
     },
     "runtimeVersion": {
       "policy": "appVersion"

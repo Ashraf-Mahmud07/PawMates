@@ -4,6 +4,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getToken } from '@/services/auth.service';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -35,7 +36,10 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
     setIsLoading(true);
     try {
       const token = await getToken();
-      const url = `${'http://192.168.10.26:5000'}/api/chat/conversations`;
+      const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
+      const base = (extra?.chatApiUrl as string) || (extra?.chatUrl as string) || (process.env.CHAT_API_URL as string) || '';
+      if (!base) throw new Error('API base URL is not configured (set expo.extra.chatApiUrl or CHAT_API_URL)');
+      const url = base.replace(/\/$/, '') + '/chat/conversations';
       const r = await fetch(url, {
         method: 'GET',
         headers: {
