@@ -16,7 +16,7 @@ export default function LoginScreen() {
     setError(null);
     try {
       setLoginLoading(true);
-      const url = `${'http://192.168.10.152:5000'}/api/auth/login`;
+      const url = `${'http://192.168.10.26:5000'}/api/auth/login`;
       console.log('Login API called with url=', url);
       const r = await fetch(url, {
         method: 'POST',

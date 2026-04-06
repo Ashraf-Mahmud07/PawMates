@@ -18,7 +18,7 @@ export default function RegisterScreen() {
     setError(null);
     try {
       setRegisterLoading(true);
-      const url = `${'http://192.168.10.152:5000'}/api/auth/register`;
+      const url = `${'http://192.168.10.26:5000'}/api/auth/register`;
       console.log('Register API called with url=', url);
       const r = await fetch(url, {
         method: 'POST',

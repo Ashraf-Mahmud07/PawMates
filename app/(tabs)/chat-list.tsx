@@ -3,7 +3,7 @@ import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useGetConversationsQuery } from '@/services/rtkApi';
+import { getToken } from '@/services/auth.service';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -19,34 +19,51 @@ type Conversation = {
   unread: number;
 };
 
-// const SAMPLE: Conversation[] = [
-//   { id: 'c1', user: { id: 'u1', name: 'Alex Johnson' }, lastMessage: 'I found a little tabby near the store', lastTimestamp: new Date().toISOString(), unread: 2 },
-//   { id: 'c2', user: { id: 'u2', name: 'Priya Shah' }, lastMessage: 'Thanks — that helped a lot!', lastTimestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), unread: 0 },
-//   { id: 'c3', user: { id: 'u3', name: 'Sam K.' }, lastMessage: "Let's meet tomorrow", lastTimestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), unread: 5 },
-//   { id: 'c4', user: { id: 'u4', name: 'Dallas Kelso' }, lastMessage: 'See you tomorrow', lastTimestamp: new Date(Date.now() - 1500 * 60 * 60 * 6).toISOString(), unread: 3 },
-// ];
-
 export default function ChatListScreen({ data }: { data?: Conversation[] }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [list, setList] = useState<Conversation[]>(data ?? []);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isError, setIsError] = useState<boolean>(false);
   const tint = Colors[colorScheme ?? 'light'].tint;
   const { openDrawer } = useSideDrawer();
 
-  const { data: fetched, isLoading, isError, refetch } = useGetConversationsQuery();
+  const refetch = React.useCallback(async () => {
+    setIsError(false);
+    setIsLoading(true);
+    try {
+      const token = await getToken();
+      const url = `${'http://192.168.10.26:5000'}/api/chat/conversations`;
+      const r = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const body = await r.json();
+      if (!r.ok) throw new Error(body?.message || `Fetch failed (${r.status})`);
+      if (Array.isArray(body)) setList(body as Conversation[]);
+      else setList([]);
+    } catch (err) {
+      console.error('Failed to fetch conversations', err);
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   React.useEffect(() => {
-    if (Array.isArray(fetched)) setList(fetched);
-  }, [fetched]);
-
-  // useEffect(() => {
-  //   fetch("https://jsonplaceholder.typicode.com/posts/1")
-  //     .then(res => res.json())
-  //     .then(data => console.log(data))
-  //     .catch(err => console.log(err));
-  // }, []);
-
+    // load conversations on mount
+    let mounted = true;
+    (async () => {
+      if (!mounted) return;
+      await refetch();
+    })();
+    return () => { mounted = false; };
+  }, [refetch]);
 
   const renderRow = ({ item }: { item: Conversation }) => {
     const initials = item.user.name

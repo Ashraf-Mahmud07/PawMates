@@ -2,10 +2,10 @@ import { useSideDrawer } from '@/components/side-drawer-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { clearToken, getToken, getUser } from '@/services/auth.service';
+import { clearToken, getToken, getUser, saveUser } from '@/services/auth.service';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileScreen() {
   const { openDrawer } = useSideDrawer();
@@ -13,6 +13,11 @@ export default function ProfileScreen() {
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editLocation, setEditLocation] = useState('');
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -25,6 +30,12 @@ export default function ProfileScreen() {
       try {
         const u = await getUser();
         if (mounted) setUser(u);
+        if (mounted && u) {
+          setEditName(u.name ?? '');
+          setEditEmail(u.email ?? '');
+          setEditPhone(u.phone ?? '');
+          setEditLocation(u.location ?? '');
+        }
       } catch {
         if (mounted) setUser(null);
       }
@@ -83,18 +94,55 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
-        <View style={styles.cardRow}>
-          <View style={styles.avatar}>{user ? <Text style={styles.avatarText}>{initials(user.name)}</Text> : <IconSymbol name="person" size={28} color="#fff" />}</View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.name}>{user?.name ?? 'Rahim Uddin'}</Text>
-            <Text style={styles.sub}>{user?.email ?? 'rahim@example.com'} · +880 1712-345678</Text>
-            <Text style={styles.sub}>Dhanmondi, Dhaka · Joined January 2026</Text>
+        {editing ? (
+          <View>
+            <TextInput value={editName} onChangeText={setEditName} placeholder="Name" style={styles.inputInline} />
+            <TextInput value={editEmail} onChangeText={setEditEmail} placeholder="Email" style={styles.inputInline} keyboardType="email-address" autoCapitalize="none" />
+            <TextInput value={editPhone} onChangeText={setEditPhone} placeholder="Phone" style={styles.inputInline} keyboardType="phone-pad" />
+            <TextInput value={editLocation} onChangeText={setEditLocation} placeholder="Location" style={styles.inputInline} />
+
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <TouchableOpacity style={styles.saveButton} onPress={async () => {
+                try {
+                  const updated = { ...user, name: editName, email: editEmail, phone: editPhone, location: editLocation } as any;
+                  await saveUser(updated);
+                  setUser(updated);
+                } catch {
+                  // ignore
+                } finally {
+                  setEditing(false);
+                }
+              }}>
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => {
+                // reset edits
+                setEditName(user?.name ?? '');
+                setEditEmail(user?.email ?? '');
+                setEditPhone(user?.phone ?? '');
+                setEditLocation(user?.location ?? '');
+                setEditing(false);
+              }}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-        <TouchableOpacity style={styles.editButton} onPress={() => router.push('/profile-edit' as any)}>
-          <IconSymbol name="pencil" size={16} color="#7a4de8" />
-          <Text style={styles.editText}>  Edit Profile</Text>
-        </TouchableOpacity>
+        ) : (
+          <>
+            <View style={styles.cardRow}>
+              <View style={styles.avatar}>{user ? <Text style={styles.avatarText}>{initials(user.name)}</Text> : <IconSymbol name="person" size={28} color="#fff" />}</View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.name}>{user?.name ?? 'Rahim Uddin'}</Text>
+                <Text style={styles.sub}>{user?.email ?? 'rahim@example.com'} · +880 1712-345678</Text>
+                <Text style={styles.sub}>{user?.location ?? 'Dhanmondi, Dhaka'} · Joined January 2026</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.editButton} onPress={() => setEditing(true)}>
+              <IconSymbol name="pencil" size={16} color="#7a4de8" />
+              <Text style={styles.editText}>  Edit Profile</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       <View style={styles.statsRow}>
@@ -169,4 +217,9 @@ const styles = StyleSheet.create({
   actionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   actionButton: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 16, alignItems: 'center', justifyContent: 'center', marginRight: 8, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 1 },
   actionLabel: { marginTop: 8, color: '#444', fontWeight: '600' },
+  inputInline: { borderWidth: 1, borderColor: '#eee', padding: 10, borderRadius: 8, backgroundColor: '#fff', marginBottom: 8 },
+  saveButton: { flex: 1, backgroundColor: '#f08a2a', borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginRight: 8 },
+  saveButtonText: { color: '#fff', fontWeight: '700' },
+  cancelButton: { flex: 1, backgroundColor: '#fff', borderRadius: 8, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#eee' },
+  cancelButtonText: { color: '#333', fontWeight: '600' },
 });
