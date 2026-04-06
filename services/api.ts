@@ -28,7 +28,7 @@ function deriveBase() {
         Platform.OS === "android"
       ) {
         // Android emulator (AVD) maps 10.0.2.2 to host loopback
-        urlObj.hostname = "192.168.10.26";
+        urlObj.hostname = "192.168.10.152";
         normalized = urlObj.toString().replace(/\/$/, "");
         console.log(
           `api: remapped localhost -> ${normalized} for Android emulator`,

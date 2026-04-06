@@ -5,9 +5,11 @@ import MessageBubble from '@/components/ui/MessageBubble';
 import TypingIndicator from '@/components/ui/TypingIndicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { API_BASE } from '@/services/api';
+import { getToken } from '@/services/auth.service';
 import { emitMessage, listenMessages } from '@/services/chat.service';
-import { useGetMessagesQuery, useMarkReadMutation, useSendMessageMutation } from '@/services/rtkApi';
 import { MaterialIcons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -52,30 +54,60 @@ export default function ChatScreen() {
     return unsub;
   }, [conversationId]);
 
-  // RTK Query: fetch messages and mark read
-  const { data: fetchedMessages } = useGetMessagesQuery(conversationId, { skip: !conversationId });
-  const [sendMessageMutation] = useSendMessageMutation();
-  const [markReadMutation] = useMarkReadMutation();
-
-  useEffect(() => {
+  // Fetch messages via fetch (instead of RTK Query)
+  const fetchMessages = React.useCallback(async () => {
     if (!conversationId) return;
-    if (Array.isArray(fetchedMessages)) {
-      setMessages(fetchedMessages as Message[]);
-      // mark as read in background
+    try {
+      const token = await getToken();
+      const base = (API_BASE || '').replace(/\/$/, '') || (() => {
+        // fallback to expo constants if API_BASE not available
+        const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
+        return (extra?.chatApiUrl as string) || (extra?.chatUrl as string) || (process.env.CHAT_API_URL as string) || '';
+      })();
+      if (!base) throw new Error('API base URL is not configured.');
+      const baseNormalized = base.replace(/\/$/, '').replace(/\/api\/?$/, '');
+      const url = baseNormalized + `/api/chat/messages/${conversationId}`;
+      console.log('Fetching messages URL:', url);
+      const r = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+      const ct = r.headers.get('content-type') || '';
+      let body: any = null;
+      if (ct.includes('application/json')) {
+        try { body = await r.json(); } catch { throw new Error('Invalid JSON response from messages endpoint'); }
+      } else {
+        const text = await r.text();
+        if (!r.ok) throw new Error(text || `Fetch failed (${r.status})`);
+        body = [];
+      }
+      if (!r.ok) throw new Error(body?.message || `Fetch failed (${r.status})`);
+      if (Array.isArray(body)) {
+        // map server shape to Message
+        const msgs = body.map((m: any) => ({ id: m.id ?? m._id ?? Date.now().toString(), text: m.text ?? m.message ?? '', timestamp: m.timestamp ?? m.createdAt ?? new Date().toISOString(), senderId: m.senderId === 'me' || m.from === 'me' ? 'me' : 'other' }));
+        setMessages(msgs as Message[]);
+      } else {
+        // seeded fallback for new/empty conversations
+        const seeded: Message[] = [
+          { id: `${conversationId}-1`, text: `Welcome to conversation ${conversationId}`, timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), senderId: 'other' },
+          { id: `${conversationId}-2`, text: 'This is a demo thread. Say hi!', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), senderId: 'me' },
+        ];
+        setMessages(seeded);
+      }
+      // mark read in background
       try {
-        markReadMutation(conversationId).catch(() => {});
+        const token2 = await getToken();
+        const r2 = await fetch(baseNormalized + `/api/chat/messages/read/${conversationId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...(token2 ? { Authorization: `Bearer ${token2}` } : {}) } });
+        if (!r2.ok) console.warn('markRead failed', await r2.text());
       } catch {
         // ignore
       }
-    } else {
-      // seeded fallback for new/empty conversations
-      const seeded: Message[] = [
-        { id: `${conversationId}-1`, text: `Welcome to conversation ${conversationId}`, timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), senderId: 'other' },
-        { id: `${conversationId}-2`, text: 'This is a demo thread. Say hi!', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), senderId: 'me' },
-      ];
-      setMessages(seeded);
+    } catch (err) {
+      console.error('Failed to fetch messages', err);
     }
-  }, [conversationId, fetchedMessages, markReadMutation]);
+  }, [conversationId]);
+
+  React.useEffect(() => {
+    if (!conversationId) return;
+    fetchMessages();
+  }, [conversationId, fetchMessages]);
 
   useEffect(() => {
     // scroll to end when messages change
@@ -105,8 +137,18 @@ export default function ChatScreen() {
     setInput('');
 
     try {
-      // call RTK mutation
-      await sendMessageMutation({ conversationId: conversationId ?? 'default', text }).unwrap();
+      const token = await getToken();
+      const base = (API_BASE || '').replace(/\/$/, '') || (() => {
+        const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
+        return (extra?.chatApiUrl as string) || (extra?.chatUrl as string) || (process.env.CHAT_API_URL as string) || '';
+      })();
+      const baseNormalized = base.replace(/\/$/, '').replace(/\/api\/?$/, '');
+      const url = baseNormalized + '/api/chat/messages';
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ conversationId: conversationId ?? 'default', text }) });
+      if (!r.ok) {
+        const txt = await r.text();
+        console.error('sendMessage failed', txt);
+      }
     } catch (err) {
       // if send failed, we keep optimistic UI but could show an error later
       console.error('sendMessage failed', err);
@@ -143,13 +185,13 @@ export default function ChatScreen() {
         </View>
 
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => {}}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => { }}>
             <MaterialIcons name="videocam" size={22} color={colors.icon} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => {}}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => { }}>
             <MaterialIcons name="call" size={20} color={colors.icon} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => {}}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => { }}>
             <IconSymbol name="ellipsis" size={20} color={colors.icon} />
           </TouchableOpacity>
         </View>
