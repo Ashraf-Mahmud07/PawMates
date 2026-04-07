@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +22,10 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
+
+  const pathname = usePathname();
+
+  console.log('pathname:', pathname);
 
   return (
     <Tabs
@@ -57,7 +61,7 @@ export default function TabLayout() {
         }}
       />
 
-      <Tabs.Screen
+      {(pathname !== "/qa" && pathname !== "/blog" && pathname !== "/stories" && pathname !== "/blog/create") && <Tabs.Screen
         name="adopt"
         options={{
           title: 'Adopt',
@@ -65,8 +69,8 @@ export default function TabLayout() {
             <TabIcon name="heart.fill" focused={!!focused} color={focused ? colors.tint : colors.icon} />
           ),
         }}
-      />
-      <Tabs.Screen
+      />}
+      {(pathname !== "/qa" && pathname !== "/blog" && pathname !== "/stories" && pathname !== "/blog/create") && <Tabs.Screen
         name="lost"
         options={{
           title: 'Lost & Found',
@@ -74,8 +78,8 @@ export default function TabLayout() {
             <TabIcon name="magnifyingglass" focused={!!focused} color={focused ? colors.tint : colors.icon} />
           ),
         }}
-      />
-      <Tabs.Screen
+      />}
+      {(pathname !== "/qa" && pathname !== "/blog" && pathname !== "/stories" && pathname !== "/blog/create") && <Tabs.Screen
         name="chat-list"
         options={{
           title: 'Chat',
@@ -83,8 +87,8 @@ export default function TabLayout() {
             <TabIcon name="bubble.left.and.bubble.right.fill" focused={!!focused} color={focused ? colors.tint : colors.icon} />
           ),
         }}
-      />
-      <Tabs.Screen
+      />}
+      {(pathname !== "/qa" && pathname !== "/blog" && pathname !== "/stories" && pathname !== "/blog/create") && <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
@@ -92,7 +96,35 @@ export default function TabLayout() {
             <TabIcon name="person.crop.circle" focused={!!focused} color={focused ? colors.tint : colors.icon} />
           ),
         }}
-      />
+      />}
+      {(pathname === "/qa" || pathname === "/blog" || pathname === "/stories" || pathname === "/blog/create") && <Tabs.Screen
+        name="qa"
+        options={{
+          title: 'Q&A',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="questionmark.circle" focused={!!focused} color={focused ? colors.tint : colors.icon} />
+          ),
+        }}
+      />}
+      {(pathname === "/qa" || pathname === "/blog" || pathname === "/stories" || pathname === "/blog/create") && <Tabs.Screen
+        name="blog"
+        options={{
+          title: 'Blog',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="newspaper" focused={!!focused} color={focused ? colors.tint : colors.icon} />
+          ),
+        }}
+      />}
+      {(pathname === "/qa" || pathname === "/blog" || pathname === "/stories" || pathname === "/blog/create") && <Tabs.Screen
+        name="stories"
+        options={{
+          title: 'Stories',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="book" focused={!!focused} color={focused ? colors.tint : colors.icon} />
+          ),
+        }}
+      />}
+
     </Tabs>
   );
 }
