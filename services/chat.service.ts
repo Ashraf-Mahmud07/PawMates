@@ -7,7 +7,7 @@ let messageHandlers: ((msg: Message) => void)[] = [];
 
 export function connectSocket(url = "", token?: string) {
   if (!url) return;
-  if (socket) return;
+  if (socket?.connected) return;
   const opts: any = { transports: ["websocket"], reconnection: true };
   if (token) opts.auth = { token };
   socket = io(url, opts);
@@ -41,7 +41,10 @@ export function disconnectSocket() {
 }
 
 export function emitMessage(conversationId: string, text: string) {
-  if (!socket) return;
+  if (!socket?.connected) {
+    console.warn("Socket not connected, message not sent");
+    return;
+  }
   socket.emit("message", { conversationId, text });
 }
 
@@ -51,5 +54,3 @@ export function listenMessages(handler: (msg: Message) => void) {
     messageHandlers = messageHandlers.filter((h) => h !== handler);
   };
 }
-
-// Note: no default export to avoid import ambiguity between named and default exports.
