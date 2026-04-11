@@ -1,16 +1,9 @@
 import { showInAppNotification } from "@/services/notification.service";
+import { Message } from "@/types/chat.type";
 import { io, Socket } from "socket.io-client";
 
-type IncomingMessage = {
-  id: string;
-  conversationId: string;
-  text: string;
-  senderId: string;
-  timestamp: string;
-};
-
 let socket: Socket | null = null;
-let messageHandlers: ((msg: IncomingMessage) => void)[] = [];
+let messageHandlers: ((msg: Message) => void)[] = [];
 
 export function connectSocket(url = "", token?: string) {
   if (!url) return;
@@ -23,13 +16,13 @@ export function connectSocket(url = "", token?: string) {
     console.log("socket connected", socket?.id);
   });
 
-  socket.on("message", (payload: IncomingMessage) => {
+  socket.on("message", (payload: Message) => {
     messageHandlers.forEach((h) => h(payload));
     // also show an in-app banner for incoming messages (minimal)
     try {
       showInAppNotification({
         title: "New message",
-        body: payload.text,
+        body: payload.message,
         data: {
           conversationId: payload.conversationId,
           userId: payload.senderId,
@@ -52,7 +45,7 @@ export function emitMessage(conversationId: string, text: string) {
   socket.emit("message", { conversationId, text });
 }
 
-export function listenMessages(handler: (msg: IncomingMessage) => void) {
+export function listenMessages(handler: (msg: Message) => void) {
   messageHandlers.push(handler);
   return () => {
     messageHandlers = messageHandlers.filter((h) => h !== handler);

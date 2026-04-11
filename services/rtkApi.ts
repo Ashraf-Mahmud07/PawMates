@@ -1,11 +1,9 @@
+import { MessagesResponse } from "@/types/chat.type";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import * as SecureStore from "expo-secure-store";
-import { API_BASE } from "./api";
-
-const baseUrl = API_BASE || "";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl,
+  baseUrl: "http://192.168.10.152:5000/api",
   prepareHeaders: async (headers) => {
     try {
       const token = await SecureStore.getItemAsync("pawmates_token");
@@ -24,31 +22,37 @@ export const api = createApi({
   endpoints: (builder) => ({
     // Auth
     login: builder.mutation<any, { email: string; password: string }>({
-      query: (body) => ({ url: "/api/auth/login", method: "POST", body }),
+      query: (body) => ({ url: "/auth/login", method: "POST", body }),
     }),
     register: builder.mutation<
       any,
       { name: string; email: string; password: string }
     >({
-      query: (body) => ({ url: "/api/auth/register", method: "POST", body }),
+      query: (body) => ({ url: "/auth/register", method: "POST", body }),
     }),
 
     // Chat
     getConversations: builder.query<any[], void>({
-      query: () => ({ url: "/api/chat/conversations" }),
+      query: () => ({ url: "/chat/conversations" }),
       providesTags: ["Conversations"],
     }),
-    getMessages: builder.query<any[], string>({
+    getMessages: builder.query<MessagesResponse, string>({
       query: (conversationId) => ({
-        url: `/api/chat/messages/${conversationId}`,
+        url: `/chat/messages/${conversationId}`,
       }),
+      transformResponse: (response: any) => response?.messages ?? [],
       providesTags: (result, error, arg) => [{ type: "Messages", id: arg }],
     }),
     sendMessage: builder.mutation<
       any,
-      { conversationId: string; text: string }
+      {
+        conversationId: string;
+        message: string;
+        messageType: string;
+        receiverId: string;
+      }
     >({
-      query: (body) => ({ url: "/api/chat/messages", method: "POST", body }),
+      query: (body) => ({ url: "/chat/messages", method: "POST", body }),
       invalidatesTags: (result, error, arg) => [
         { type: "Messages", id: arg.conversationId },
         "Conversations",
@@ -56,7 +60,7 @@ export const api = createApi({
     }),
     markRead: builder.mutation<any, string>({
       query: (conversationId) => ({
-        url: `/api/chat/messages/read/${conversationId}`,
+        url: `/chat/messages/read/${conversationId}`,
         method: "PUT",
       }),
       invalidatesTags: (result, error, arg) => [

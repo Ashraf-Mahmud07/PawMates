@@ -5,6 +5,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { API_BASE } from '@/services/api';
 import { getToken, getUser } from '@/services/auth.service';
+import { useGetConversationsQuery } from '@/services/rtkApi';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -14,8 +15,8 @@ import { styles as indexStyles } from './index.styles';
 
 
 type Conversation = {
-  id: string;
-  user: { id: string; name: string; avatar?: string };
+  _id: string;
+  participants: { _id: string; name: string; avatar?: string }[];
   lastMessage: string;
   lastTimestamp: string;
   unread: number;
@@ -26,14 +27,13 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [list, setList] = useState<Conversation[]>(data ?? []);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isError, setIsError] = useState<boolean>(false);
   const [otherUsers, setOtherUsers] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState<boolean>(false);
   const [creatingConvFor, setCreatingConvFor] = useState<string | null>(null);
   const tint = Colors[colorScheme ?? 'light'].tint;
   const { openDrawer } = useSideDrawer();
+
+  const { data: conversationsData, isLoading, isError, refetch } = useGetConversationsQuery();
 
   const fetchUsers = React.useCallback(async () => {
     setUsersLoading(true);
@@ -91,54 +91,6 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
     }
   }, []);
 
-  const refetch = React.useCallback(async () => {
-    setIsError(false);
-    setIsLoading(true);
-    try {
-      const token = await getToken();
-      const base = (API_BASE || '').replace(/\/$/, '') || (() => {
-        const extra: any = (Constants as any).expoConfig?.extra ?? (Constants as any).manifest?.extra ?? {};
-        return (extra?.chatApiUrl as string) || (extra?.chatUrl as string) || (process.env.CHAT_API_URL as string) || '';
-      })();
-      if (!base) throw new Error('API base URL is not configured (set expo.extra.chatApiUrl or CHAT_API_URL)');
-      const baseNormalized = base.replace(/\/$/, '').replace(/\/api\/?$/, '');
-      const url = baseNormalized + '/api/chat/conversations';
-      console.log('Fetching conversations URL:', url);
-      const r = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      const ct = r.headers.get('content-type') || '';
-      let body: any = null;
-      if (ct.includes('application/json')) {
-        try { body = await r.json(); } catch { throw new Error('Invalid JSON response from conversations endpoint'); }
-      } else {
-        const text = await r.text();
-        if (!r.ok) throw new Error(text || `Fetch failed (${r.status})`);
-        body = [];
-      }
-      if (!r.ok) throw new Error(body?.message || `Fetch failed (${r.status})`);
-      if (Array.isArray(body)) setList(body as Conversation[]);
-      else setList([]);
-      // if empty, fetch users for starting new conversations
-      if (!Array.isArray(body) || (Array.isArray(body) && body.length === 0)) {
-        // fetch users list (excluding logged-in user)
-        console.log('Conversations empty — fetching users to start new conversations');
-        await fetchUsers();
-      }
-      console.log('Conversations response length:', Array.isArray(body) ? body.length : 0);
-    } catch (err) {
-      console.error('Failed to fetch conversations', err);
-      setIsError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchUsers]);
-
-
 
   const createConversation = React.useCallback(async (userId: string, userName?: string) => {
     setCreatingConvFor(userId);
@@ -152,9 +104,7 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
       const baseNormalized = base.replace(/\/$/, '').replace(/\/api\/?$/, '');
       // Try several possible endpoints (some backends expose different routes)
       const tryEndpoints = [
-        '/api/chat/conversations',
-        '/api/chat/conversation',
-        '/api/conversations',
+        '/api/chat/conversations/create',
       ];
 
       let conv: any = null;
@@ -193,8 +143,8 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
         { to: userId },
       ];
 
-  console.log('Has token for createConversation:', !!token);
-  for (const ep of tryEndpoints) {
+      console.log('Has token for createConversation:', !!token);
+      for (const ep of tryEndpoints) {
         for (const bodyVariant of bodyVariants) {
           try {
             const res = await tryPost(ep, bodyVariant);
@@ -257,7 +207,7 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
   }, [refetch]);
 
   const renderRow = ({ item }: { item: Conversation }) => {
-    const initials = item.user.name
+    const initials = item?.participants?.[1]?.name
       .split(' ')
       .map(s => s[0])
       .slice(0, 2)
@@ -269,14 +219,14 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
         onPress={() =>
           router.push({
             pathname: '/chat',
-            params: { conversationId: item.id, userId: item.user.id, userName: item.user.name },
+            params: { conversationId: item._id, userId: item.participants?.[1]?._id, userName: item.participants?.[1]?.name },
           })
         }
         activeOpacity={0.8}
       >
         <View style={styles.avatarWrapper}>
-          {item.user.avatar ? (
-            <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+          {item.participants?.[1]?.avatar ? (
+            <Image source={{ uri: item.participants?.[1]?.avatar }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarInitial}>{initials}</Text>
@@ -290,7 +240,7 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
         <View style={styles.body}>
           <View style={styles.topRow}>
             <Text style={[styles.name, { color: colors.text }]}>
-              {item.user.name}
+              {item.participants?.[1]?.name}
             </Text>
 
             <Text style={[styles.time, { color: colors.icon }]}>
@@ -353,7 +303,7 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
-      ) : /* Empty / not found state */ (list.length === 0) ? (
+      ) : /* Empty / not found state */ (conversationsData?.length === 0) ? (
         <View style={styles.centered}>
           <IconSymbol name="bubble.left" size={48} color={tint} />
           <Text style={[styles.emptyTitle, { color: colors.text, marginTop: 12 }]}>No conversations yet</Text>
@@ -368,12 +318,12 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
           ) : otherUsers && otherUsers.length > 0 ? (
             <View style={{ width: '100%', marginTop: 12 }}>
               {otherUsers.map(u => {
-                const uid = u?.id ?? u?._id ?? u?.uid ?? u?.userId ?? null;
+                const uid = u?._id ?? null;
                 return (
                   <TouchableOpacity
-                    key={uid ?? u.name}
+                    key={uid ?? u?.name}
                     style={[styles.card, { marginBottom: 8 }]}
-                    onPress={() => createConversation(uid, u.name)}
+                    onPress={() => createConversation(uid, u?.name)}
                     activeOpacity={0.8}
                   >
                     <View style={styles.avatarWrapper}>
@@ -383,14 +333,14 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
                         <Image source={{ uri: u.avatar }} style={styles.avatar} />
                       ) : (
                         <View style={styles.avatarPlaceholder}>
-                          <Text style={styles.avatarInitial}>{(u.name || '').split(' ').map((s: string) => s[0]).slice(0,2).join('')}</Text>
+                          <Text style={styles.avatarInitial}>{(u?.name || '').split(' ').map((s: string) => s[0]).slice(0, 2).join('')}</Text>
                         </View>
                       )}
                     </View>
 
                     <View style={styles.body}>
-                      <Text style={[styles.name, { color: colors.text }]}>{u.name}</Text>
-                      {u.email ? <Text style={{ color: colors.icon, marginTop: 4 }}>{u.email}</Text> : null}
+                      <Text style={[styles.name, { color: colors.text }]}>{u?.name}</Text>
+                      {u?.email ? <Text style={{ color: colors.icon, marginTop: 4 }}>{u.email}</Text> : null}
                     </View>
                   </TouchableOpacity>
                 );
@@ -400,8 +350,8 @@ export default function ChatListScreen({ data }: { data?: Conversation[] }) {
         </View>
       ) : (
         <FlatList
-          data={list}
-          keyExtractor={i => i.id}
+          data={conversationsData}
+          keyExtractor={i => i?._id}
           renderItem={renderRow}
           contentContainerStyle={{ padding: 12 }}
         />

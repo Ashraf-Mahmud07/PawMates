@@ -1,20 +1,14 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Message } from '@/types/chat.type';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-export type Message = {
-  id: string;
-  text: string;
-  timestamp?: string;
-  senderId: 'me' | 'other';
-};
-
-export default function MessageBubble({ message }: { message: Message }) {
+export default function MessageBubble({ message, currentUserId }: { message: Message; currentUserId: string }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const isMe = message.senderId === 'me';
+  const isMe = !!currentUserId && message.senderId === currentUserId;
 
   return (
     <View style={[styles.row, isMe ? styles.right : styles.left]}>
@@ -25,9 +19,9 @@ export default function MessageBubble({ message }: { message: Message }) {
           (isMe ? { backgroundColor: colors.tint } : { backgroundColor: colorScheme === 'dark' ? '#1f1f1f' : '#fff' }) as any,
         ]}
       >
-        <Text style={[styles.text, { color: isMe ? '#fff' : colors.text }]}>{message.text}</Text>
+        <Text style={[styles.text, { color: isMe ? '#fff' : colors.text }]}>{message.message}</Text>
         <View style={styles.rowMeta}>
-          <Text style={[styles.time, { color: isMe ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.45)' }]}>{formatTime(message.timestamp)}</Text>
+          <Text style={[styles.time, { color: isMe ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.45)' }]}>{formatTime(message.createdAt)}</Text>
           {isMe ? (
             <MaterialIcons name="done-all" size={14} color={colorScheme === 'dark' ? 'rgba(255,255,255,0.85)' : '#fff'} style={{ marginLeft: 6 }} />
           ) : null}
